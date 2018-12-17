@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Deep Guided Filter</title>
+        <link rel="stylesheet" href="https://unpkg.com/purecss@1.0.0/build/pure-min.css" integrity="sha384-nn4HPE8lTHyVtfCBi5yW9d20FjT8BJwUXyWZT9InLYax14RDjBj46LmSztkmNP9w" crossorigin="anonymous">
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+        <script>
+            $(document).ready(function() {
+                document.getElementById('auto_ps').click();
+
+                var slider_r = document.getElementById("r_range");
+                var output_r = document.getElementById("r");
+                output_r.innerHTML = slider_r.value.padStart(2, '0'); // Display the default slider value
+
+                // Update the current slider value (each time you drag the slider handle)
+                slider_r.oninput = function() {
+                  output_r.innerHTML = this.value.padStart(2, '0');
+                };
+
+                var slider_eps = document.getElementById("eps_range");
+                var output_eps = document.getElementById("eps");
+                output_eps.innerHTML = '1e'+slider_eps.value.padStart(2, '0'); // Display the default slider value
+
+                // Update the current slider value (each time you drag the slider handle)
+                slider_eps.oninput = function() {
+                  output_eps.innerHTML = '1e'+this.value.padStart(2, '0');
+                }
+            });
+
+            function click_m(id) {
+                $('#'+id).parent().addClass('pure-menu-selected').siblings().removeClass('pure-menu-selected');
+
+                $('#task').text(id);
+            }
+
+            function process() {
+                task = $('#task').text();
+                r = parseInt($('#r').text());
+                eps = parseFloat($('#eps').text());
+                path = $('#path').text();
+                $.ajax({
+                    url: 'http://40.121.90.224:8080/'+task,
+                    data: {'path': path,
+                           'r': r, 'eps': eps},
+                    type: 'put'
+                }).then(function(data) {
+                   $('.image').attr('src', 'http://40.121.90.224:8080/'+data.data).attr('hidden', false);
+                });
+            }
+
+            function upload(input) {
+                var form = document.getElementById('upload');
+                var formData = new FormData(form);
+
+                $.ajax({
+                    url: 'http://40.121.90.224:8080/upload',
+                    type: 'put',
+                    data: formData,
+                    processData: false,
+                    contentType: false
+                }).then(function(data) {
+                    $('#path').text(data.data);
+
+                    console.log(input.files);
+                    if (input.files && input.files[0]) {
+                        var reader = new FileReader();
+                        reader.onload = function (e) {
+                            $('.input')
+                                .attr('src', e.target.result).attr('hidden', false);
+                        };
+
+                        reader.readAsDataURL(input.files[0]);
+                    }
+                });
+
+            }
+        </script>
+    </head>
+
+    <body>
+        <h1 align="center">
+            Deep Guided Filter
+        </h1>
+        <div class="pure-menu pure-menu-horizontal" align="center">
+            <ul class="pure-menu-list">
+                <li class="pure-menu-item"><a href="#ps" class="pure-menu-link" onclick="click_m(this.id)" id="auto_ps">Auto PS</a></li>
+                <li class="pure-menu-item"><a href="#l0" class="pure-menu-link" onclick="click_m(this.id)" id="l0_smooth">L<sub>0</sub> Smooth</a></li>
+                <li class="pure-menu-item"><a href="#dehaze" class="pure-menu-link" onclick="click_m(this.id)" id="non_local_dehazing">Dehazing</a></li>
+                <li class="pure-menu-item"><a href="#scale" class="pure-menu-link" onclick="click_m(this.id)" id="multi_scale_detail_manipulation">Detail Manipulation</a></li>
+                <li class="pure-menu-item"><a href="#style" class="pure-menu-link" onclick="click_m(this.id)" id="style_transfer">Style Transfer</a></li>
+            </ul>
+            <p id="task" hidden></p>
+        </div>
+        <p>
+        <div class="pure-g">
+            <div class="pure-u-1-4">
+                <div class="slidecontainer;pure-g">
+                    <div class="pure-u-1-3" align="right">
+                        <label>R: </label>
+                        <span id="r"></span>
+                    </div>
+                    <div class="pure-u-1-3">
+                        <input type="range" min="1" max="30" value="1" class="slider" id="r_range">
+                    </div>
+                </div>
+            </div>
+            <div class="pure-u-1-4">
+                <div class="slidecontainer;pure-g">
+                    <div class="pure-u-1-3" align="right">
+                        <label>EPS: </label>
+                        <span id="eps"></span>
+                    </div>
+                    <div class="pure-u-1-3">
+                        <input type="range" min="-8" max="-1" value="-8" class="slider" id="eps_range">
+                    </div>
+                </div>
+            </div>
+            <div class="pure-u-1-4">
+                <form id='upload' method="POST" enctype="multipart/form-data">
+                    <input type="file" name="image" value="" onchange="upload(this)">
+                </form>
+                <p id="path" hidden/>
+            </div>
+            <div class="pure-u-1-4">
+                <button class="pure-button" onclick="process()">Process</button>
+            </div>
+        </div>
+        <p/>
+        <div class="pure-g">
+            <div class="pure-u-1-2" align="right">
+                <img src='' class='input' hidden/>
+            </div>
+            <div class="pure-u-1-2">
+                <img src='' class='image' hidden/>
+            </div>
+        </div>
+
+    </body>
+</html>
