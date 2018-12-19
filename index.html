@@ -61,7 +61,6 @@
                 }).then(function(data) {
                     $('#path').text(data.data);
 
-                    console.log(input.files);
                     if (input.files && input.files[0]) {
                         var reader = new FileReader();
                         reader.onload = function (e) {
@@ -70,6 +69,8 @@
                         };
 
                         reader.readAsDataURL(input.files[0]);
+
+                        $('.image').attr('hidden', true);
                     }
                 });
 
@@ -128,10 +129,10 @@
         <p/>
         <div class="pure-g">
             <div class="pure-u-1-2" align="right">
-                <img src='' class='input' hidden/>
+                <img src='' class='input' hidden width="90%"/>
             </div>
             <div class="pure-u-1-2">
-                <img src='' class='image' hidden/>
+                <img src='' class='image' hidden width="90%"/>
             </div>
         </div>
 
