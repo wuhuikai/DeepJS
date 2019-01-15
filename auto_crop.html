@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>A2RL: Auto Image Cropping</title>
+        <link rel="stylesheet" href="https://unpkg.com/purecss@1.0.0/build/pure-min.css" integrity="sha384-nn4HPE8lTHyVtfCBi5yW9d20FjT8BJwUXyWZT9InLYax14RDjBj46LmSztkmNP9w" crossorigin="anonymous">
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+        <script>
+            var fileReader = new FileReader();
+            var image;
+            fileReader.onload = function(event) {
+                image = new Image();
+
+                image.onload = function() {
+                    var form = document.getElementById('upload');
+                    var formData = new FormData(form);
+
+                    $('#load_input').attr('hidden', false);
+                    $('#input').attr('hidden', true);
+                    $('#output').attr('hidden', true);
+                    $.ajax({
+                        url: 'http://40.121.90.224:8080/upload',
+                        type: 'put',
+                        data: formData,
+                        processData: false,
+                        contentType: false
+                    }).then(function(data) {
+                        $('#load_input').attr('hidden', true);
+                        $('#path').text(data.data);
+                        $('#input').attr('src', image.src).attr('hidden', false);
+                    });
+                };
+                image.src = event.target.result;
+            };
+
+            function upload(input) {
+                if (input.files && input.files[0]) {
+                    fileReader.readAsDataURL(input.files[0]);
+                }
+            }
+
+            function process() {
+                $('#load_output').attr('hidden', false);
+                $('#output').attr('hidden', true);
+                path = $('#path').text();
+                $.ajax({
+                    url: 'http://40.121.90.224:8080/auto_crop',
+                    data: {'path': path},
+                    type: 'get'
+                }).then(function(data) {
+                    var left = data.box[0], top = data.box[1],
+                        right = data.box[2], bottom = data.box[3];
+                    var canvas_width = right - left, canvas_height = bottom - top;
+
+                    var canvas = document.createElement('canvas');
+                    var context = canvas.getContext('2d');
+                    canvas.width = canvas_width; canvas.height = canvas_height;
+                    context.drawImage(image, left, top, canvas_width, canvas_height, 0, 0, canvas_width, canvas_height);
+
+                    $('#load_output').attr('hidden', true);
+                    $('#output').attr('hidden', false).attr('src', canvas.toDataURL());
+                });
+            }
+        </script>
+    </head>
+
+    <body>
+        <h1 align="center">
+            A2RL: Auto Image Cropping
+        </h1>
+        <p>
+        <div class="pure-g" align="center">
+            <div class="pure-u-1-2">
+                <form id='upload' method="POST" enctype="multipart/form-data">
+                    <input type="file" id="image" value="" onchange="upload(this)" name="image">
+                </form>
+                <p id="path" hidden/>
+            </div>
+            <div class="pure-u-1-2">
+                <button class="pure-button" onclick="process()">Crop</button>
+            </div>
+        </div>
+        <p>
+        <div class="pure-g">
+            <div class="pure-u-1-2" align="center">
+                <img src='' id='input' hidden width="90%"/>
+                <img src='load.gif' id='load_input' hidden width="10%"/>
+            </div>
+            <div class="pure-u-1-2" align="center">
+                <img src='' id='output' hidden width="90%"/>
+                <img src='load.gif' id='load_output' hidden width="10%"/>
+            </div>
+        </div>
+    </body>
+</html>
