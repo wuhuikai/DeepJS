@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Face Swap</title>
+        <link rel="stylesheet" href="https://unpkg.com/purecss@1.0.0/build/pure-min.css" integrity="sha384-nn4HPE8lTHyVtfCBi5yW9d20FjT8BJwUXyWZT9InLYax14RDjBj46LmSztkmNP9w" crossorigin="anonymous">
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+        <script>
+            function upload(input, post_fix) {
+                $('#load_'+post_fix).attr('hidden', false);
+
+                var form = document.getElementById('upload_'+post_fix);
+                var formData = new FormData(form);
+                $.ajax({
+                    url: 'http://40.121.90.224:8080/upload',
+                    type: 'put',
+                    data: formData,
+                    processData: false,
+                    contentType: false
+                }).then(function(img) {
+                    $('#path_' + post_fix).text(img.data);
+                    $.ajax({
+                        url: 'http://40.121.90.224:8080/face_swap/detection',
+                        data: {'path': img.data},
+                        type: 'get'
+                    }).then(function(boxes) {
+                        var fileReader = new FileReader();
+                        fileReader.onload = function (event) {
+                            var image = new Image();
+                            image.onload = function(){
+                                var canvas = document.getElementById(post_fix);
+                                var context = canvas.getContext("2d");
+                                width = $('#im_div').width()*0.9;
+
+                                ratio = image.width/width;
+                                canvas.width = width;
+                                canvas.height = image.height/ratio;
+
+                                function draw(target) {
+                                    $('#id_' + post_fix).text(boxes.boxes[target]);
+                                    context.drawImage(image, 0, 0, image.width, image.height, 0, 0, canvas.width, canvas.height);
+
+                                    for (var idx in boxes.boxes) {
+                                        box = boxes.boxes[idx];
+
+                                        context.beginPath();
+                                        if (idx == target) {
+                                            context.strokeStyle = "red";
+                                        } else {
+                                            context.strokeStyle = "green";
+                                        }
+                                        context.rect(box[0] / ratio, box[1] / ratio, (box[2] - box[0]) / ratio, (box[3] - box[1]) / ratio);
+                                        context.stroke();
+                                    }
+                                }
+                                draw(0);
+
+                                canvas.addEventListener('click', function(event) {
+                                    var x = (event.pageX - canvas.offsetLeft)*ratio;
+                                    var y = (event.pageY - canvas.offsetTop)*ratio;
+
+                                    for (var idx in boxes.boxes) {
+                                        box = boxes.boxes[idx];
+
+                                        if (x >= box[0] && x <= box[2] && y >= box[1] && y <=box[3]) {
+                                            draw(idx);
+                                            break;
+                                        }
+                                    }
+
+                                }, false);
+                            };
+                            image.src = event.target.result;
+                        };
+                        if (input.files && input.files[0]) {
+                            $('#' + post_fix).attr('hidden', false);
+                            fileReader.readAsDataURL(input.files[0]);
+                            $('#output').attr('hidden', true);
+                        }
+                        $('#load_' + post_fix).attr('hidden', true);
+                    });
+                });
+            }
+
+            function process() {
+                $('#load_output').attr('hidden', false);
+                $('#output').attr('hidden', true);
+                src = $('#path_from').text();
+                dst = $('#path_to').text();
+                src_box = $('#id_from').text();
+                dst_box = $('#id_to').text();
+                $.ajax({
+                    url: 'http://40.121.90.224:8080/face_swap/face_swap',
+                    data: {'src': src, 'dst': dst,
+                           'src_box': src_box, 'dst_box': dst_box,
+                           'warp_2d': $('#warp').is(":checked"), 'correct_color': $('#color').is(":checked")},
+                    type: 'get'
+                }).then(function(data) {
+                    $('#output').attr('src', 'http://40.121.90.224:8080/'+data.path).attr('hidden', false);
+                    $('#load_output').attr('hidden', true);
+                });
+            }
+        </script>
+    </head>
+
+    <body>
+        <h1 align="center">
+            Face Swap
+        </h1>
+        <p>
+        <div class="pure-g" align="center">
+            <div class="pure-u-1-3">
+                <form id='upload_from' method="POST" enctype="multipart/form-data">
+                    From: <input type="file" id="image_from" value="" onchange="upload(this, 'from')" name="image">
+                </form>
+                <p id="path_from" hidden/>
+                <p id="id_from" hidden/>
+            </div>
+            <div class="pure-u-1-3">
+                <form id='upload_to' method="POST" enctype="multipart/form-data">
+                    To: <input type="file" id="image_to" value="" onchange="upload(this, 'to')" name="image">
+                </form>
+                <p id="path_to" hidden/>
+                <p id="id_to" hidden/>
+            </div>
+            <div class="pure-u-1-3">
+                <input type="checkbox" id="warp"> 2D Wrap
+                <input type="checkbox" id="color"> Color Correction
+                <button class="pure-button" onclick="process()">Swap</button>
+            </div>
+        </div>
+        <p>
+        <div class="pure-g">
+            <div class="pure-u-1-3" align="center" id="im_div">
+                <canvas id='from' hidden title="Select the target face [red: chosen; green: others]"/>
+                <img src='load.gif' id='load_from' hidden width="10%"/>
+            </div>
+            <div class="pure-u-1-3" align="center">
+                <canvas id='to' hidden title="Select the target face [red: chosen; green: others]/>
+                <img src='load.gif' id='load_to' hidden width="10%"/>
+            </div>
+            <div class="pure-u-1-3" align="center">
+                <img src='' id='output' hidden width="90%"/>
+                <img src='load.gif' id='load_output' hidden width="10%"/>
+            </div>
+        </div>
+    </body>
+</html>
