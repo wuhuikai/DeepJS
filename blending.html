@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>GP-GAN: Image Blending</title>
+        <link rel="stylesheet" href="https://unpkg.com/purecss@1.0.0/build/pure-min.css" integrity="sha384-nn4HPE8lTHyVtfCBi5yW9d20FjT8BJwUXyWZT9InLYax14RDjBj46LmSztkmNP9w" crossorigin="anonymous">
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+        <script>
+            var ip = 'http://40.121.90.224:8080/';
+            var imgs = {'src': null, 'mask': null, 'dst': null};
+
+            $(document).ready(function() {
+                document.getElementById("color_weight").oninput = function() {
+                    document.getElementById("color_weight_label").innerHTML = (this.value*0.1).toFixed(1);
+                };
+                document.getElementById("ratio").oninput = function() {
+                    document.getElementById("ratio_label").innerHTML = (this.value*0.1).toFixed(1);
+                    redraw();
+                };
+            });
+
+            function redraw() {
+                if (imgs['dst'] != null) {
+                    var dst_im = imgs['dst'];
+                    var div_img_ratio = $('#im_div').width() * 0.9 / dst_im.width;
+
+                    var canvas = document.getElementById('canvas');
+                    var context = canvas.getContext('2d');
+
+                    canvas.width = dst_im.width * div_img_ratio;
+                    canvas.height = dst_im.height * div_img_ratio;
+                    context.drawImage(dst_im, 0, 0, dst_im.width, dst_im.height, 0, 0, canvas.width, canvas.height);
+                }
+
+                if (imgs['src'] == null || imgs['mask'] == null) {
+                    return null;
+                }
+
+                var ratio = parseFloat($('#ratio_label').text());
+                var mask = imgs['mask'];
+                var w = mask.width*ratio;
+                var h = mask.height*ratio;
+                var x = parseInt($('#x_label').text());
+                var y = parseInt($('#y_label').text());
+                context.globalCompositeOperation = 'screen';
+                context.drawImage(mask, x*div_img_ratio, y*div_img_ratio, w*div_img_ratio, h*div_img_ratio);
+
+
+                var canvas_buffer = document.createElement('canvas');
+                var context_buffer = canvas_buffer.getContext('2d');
+                canvas_buffer.width = w;
+                canvas_buffer.height = h;
+
+                context_buffer.drawImage(mask, 0, 0, w, h);
+                context_buffer.globalCompositeOperation='difference';
+                context_buffer.fillStyle='white';
+                context_buffer.fillRect(0, 0, w, h);
+                var src_im = imgs['src'];
+                context_buffer.globalCompositeOperation = 'screen';
+                context_buffer.drawImage(src_im, 0, 0, w, h);
+
+                context.globalCompositeOperation = 'multiply';
+                context.drawImage(canvas_buffer, x*div_img_ratio, y*div_img_ratio, w*div_img_ratio, h*div_img_ratio);
+
+                context.beginPath();
+                context.strokeStyle = "green";
+                context.rect(x*div_img_ratio, y*div_img_ratio, w*div_img_ratio, h*div_img_ratio);
+                context.stroke();
+
+                $('#dst_group').attr('hidden', false);
+                var x_slider = document.getElementById("x");
+                x_slider.min = parseInt(-w);
+                x_slider.max = parseInt(dst_im.width);
+                x_slider.oninput = function() {
+                    document.getElementById("x_label").innerHTML = parseInt(this.value);
+                    redraw();
+                };
+                var y_slider = document.getElementById("y");
+                y_slider.min = parseInt(-h);
+                y_slider.max = parseInt(dst_im.height);
+                y_slider.oninput = function() {
+                    document.getElementById("y_label").innerHTML = parseInt(this.value);
+                    redraw();
+                };
+            }
+
+            function upload(input, post_fix) {
+                $('#load_'+post_fix).attr('hidden', false);
+                $('#'+post_fix).attr('hidden', true);
+                $('#output').attr('hidden', true);
+                imgs[post_fix] = null;
+
+                var form = document.getElementById('upload_'+post_fix);
+                var formData = new FormData(form);
+                $.ajax({
+                    url: ip+'upload',
+                    type: 'put',
+                    data: formData,
+                    processData: false,
+                    contentType: false
+                }).then(function(img) {
+                    if (input.files && input.files[0]) {
+                        var reader = new FileReader();
+                        reader.onload = function (e) {
+                            imgs[post_fix] = new Image();
+                            imgs[post_fix].src = e.target.result;
+
+                            if (post_fix !== 'dst') {
+                                $('#'+post_fix).attr('src', e.target.result).attr('hidden', false);
+                            }else {
+                                $('#'+post_fix).attr('hidden', false);
+                            }
+                        };
+                        reader.readAsDataURL(input.files[0]);
+                        $('#path_' + post_fix).text(img.data);
+                        $('#load_' + post_fix).attr('hidden', true);
+                    }
+                });
+            }
+
+            function process() {
+                $('#load_output').attr('hidden', false);
+                $('#output').attr('hidden', true);
+                src = $('#path_src').text();
+                dst = $('#path_dst').text();
+                mask = $('#path_mask').text();
+                $.ajax({
+                    url: ip+'blending',
+                    data: {'src': src, 'dst': dst,
+                           'mask': mask,
+                           'color_weight': parseFloat($('#color_weight_label').text()),
+                           'x': parseInt($('#x_label').text()), 'y': parseInt($('#y_label').text()),
+                           'ratio': parseFloat($('#ratio_label').text())},
+                    type: 'get'
+                }).then(function(data) {
+                    $('#output').attr('src', ip+data.path).attr('hidden', false);
+                    $('#load_output').attr('hidden', true);
+                });
+            }
+
+            setInterval(function() {
+                redraw();
+            }, 1000);
+        </script>
+    </head>
+
+    <body>
+        <h1 align="center">
+            GP-GAN: Image Blending
+        </h1>
+        <p>
+        <div class="pure-g" align="center">
+            <div class="pure-u-1-3">
+                <form id='upload_src' method="POST" enctype="multipart/form-data">
+                    From: <input type="file" id="image_src" value="" onchange="upload(this, 'src')" name="image">
+                </form>
+                <p id="path_src" hidden/>
+                <br/><p/>
+                <form id='upload_mask' method="POST" enctype="multipart/form-data">
+                    Mask: <input type="file" id="image_mask" value="" onchange="upload(this, 'mask')" name="image">
+                </form>
+                <p id="path_mask" hidden/>
+            </div>
+            <div class="pure-u-1-3">
+                <form id='upload_dst' method="POST" enctype="multipart/form-data">
+                    To: <input type="file" id="image_dst" value="" onchange="upload(this, 'dst')" name="image">
+                </form>
+                <p id="path_dst" hidden/>
+            </div>
+            <div class="pure-u-1-3">
+                <label>Color Weight: </label>
+                <span id="color_weight_label">1.0</span>
+                <input type="range" min="1" max="10" value="10" class="slider" id="color_weight">
+
+                <button class="pure-button" onclick="process()">Blend</button>
+            </div>
+        </div>
+        <p>
+        <div class="pure-g">
+            <div class="pure-u-1-3" align="center" id="im_div">
+                <img src='' id='src' hidden width="90%"/>
+                <img src='load.gif' id='load_src' hidden width="10%"/>
+                <br/><p/>
+                <img src='' id='mask' hidden width="90%"/>
+                <img src='load.gif' id='load_mask' hidden width="10%"/>
+            </div>
+            <div class="pure-u-1-3" align="center">
+                <img src='load.gif' id='load_dst' hidden width="10%"/>
+                <div id="dst" hidden class="pure-g" align="center">
+                    <div align="center">
+                        <canvas id='canvas' title="">
+                        </canvas>
+                    </div>
+                    <br>
+                    <div class="pure-u-1-3" align="center">
+                        <label>Ratio: </label>
+                        <input type="range" min="1" max="20" value="10" id="ratio"/>
+                        <span id="ratio_label">1.0</span>
+                    </div>
+                    <div class="pure-u-1-3" align="center">
+                        <label>X: </label>
+                        <input type="range" id="x"/>
+                        <span id="x_label">0</span>
+                    </div>
+                    <div class="pure-u-1-3" align="center">
+                        <label>Y: </label>
+                        <input type="range" id="y"/>
+                        <span id="y_label">0</span>
+                    </div>
+                </div>
+            </div>
+            <div class="pure-u-1-3" align="center">
+                <img src='' id='output' hidden width="90%"/>
+                <img src='load.gif' id='load_output' hidden width="10%"/>
+            </div>
+        </div>
+    </body>
+</html>
