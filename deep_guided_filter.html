@@ -7,7 +7,11 @@
         <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@0.14.1/dist/tf.min.js"></script>
         <script>
             $(document).ready(function() {
-                document.getElementById('auto_ps').click();
+                if (window.location.hash == '#ps') {
+                    document.getElementById('auto_ps').click();
+                } else {
+                    document.getElementById('non_local_dehazing').click();
+                }
             });
 
             var fileReader = new FileReader();
@@ -99,6 +103,13 @@
                 });
             }
         </script>
+        <style type='text/css'>
+            .gray_box {
+                border-style: solid;
+                border-width: 2px;
+                border-color: gray;
+            }
+        </style>
     </head>
 
     <body>
@@ -107,8 +118,8 @@
         </h1>
         <div class="pure-menu pure-menu-horizontal" align="center">
             <ul class="pure-menu-list">
-                <li class="pure-menu-item"><a href="#ps" class="pure-menu-link" onclick="click_m(this.id)" id="auto_ps">Auto PS</a></li>
-                <li class="pure-menu-item"><a href="#dehaze" class="pure-menu-link" onclick="click_m(this.id)" id="non_local_dehazing">Dehazing</a></li>
+                <li class="pure-menu-item gray_box"><a href="#ps" class="pure-menu-link" onclick="click_m(this.id)" id="auto_ps">Auto PS</a></li>
+                <li class="pure-menu-item gray_box"><a href="#dehaze" class="pure-menu-link" onclick="click_m(this.id)" id="non_local_dehazing">Dehazing</a></li>
             </ul>
             <p id="task" hidden></p>
         </div>

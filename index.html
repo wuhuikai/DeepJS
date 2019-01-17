@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>DeepJS by Huikai Wu</title>
+        <link rel="stylesheet" href="https://unpkg.com/purecss@1.0.0/build/pure-min.css" integrity="sha384-nn4HPE8lTHyVtfCBi5yW9d20FjT8BJwUXyWZT9InLYax14RDjBj46LmSztkmNP9w" crossorigin="anonymous">
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+        <script>
+            $(document).ready(function() {
+                hover('ps');
+            });
+
+            function hover(name) {
+                $('#'+name).attr('hidden', false).siblings().attr('hidden', true);
+                $('#li_'+name).addClass('pure-menu-selected').siblings().removeClass('pure-menu-selected');
+            }
+        </script>
+        <style type='text/css'>
+            .gray_box {
+                border-style: solid;
+                border-width: 2px;
+                border-color: gray;
+            }
+        </style>
+    </head>
+
+    <body>
+        <h1 align="center">
+            DeepJS by Huikai Wu
+        </h1>
+        <div align="center">
+            <a href="http://wuhuikai.me/">[Home]</a>
+            <a href="https://github.com/wuhuikai/DeepJS">[Client GitHub]</a>
+            <a href="https://github.com/wuhuikai/DeepCV">[Server GitHub]</a>
+        </div>
+        <p></p>
+        <div class="pure-menu pure-menu-horizontal" align="center">
+            <ul class="pure-menu-list">
+                <li class="pure-menu-item gray_box" id="li_ps">
+                    <a href="deep_guided_filter.html#ps" class="pure-menu-link" onmouseover="hover('ps')">Auto PS</a>
+                </li>
+                <li class="pure-menu-item gray_box" id="li_dehaze">
+                    <a href="deep_guided_filter.html#dehaze" class="pure-menu-link" onmouseover="hover('dehaze')">Dehazing</a>
+                </li>
+                <li class="pure-menu-item gray_box" id="li_face_swap">
+                    <a href="face_swap.html" class="pure-menu-link" onmouseover="hover('face_swap')">Face Swap</a>
+                </li>
+                <li class="pure-menu-item gray_box" id="li_blending">
+                    <a href="blending.html" class="pure-menu-link" onmouseover="hover('blending')">Image Blending w/ Mask</a>
+                </li>
+                <li class="pure-menu-item gray_box" id="li_blending_mask">
+                    <a href="blending_mask.html" class="pure-menu-link" onmouseover="hover('blending_mask')">Image Blending w/o Mask</a>
+                </li>
+                <li class="pure-menu-item gray_box" id="li_crop">
+                    <a href="auto_crop.html" class="pure-menu-link" onmouseover="hover('crop')">Auto Cropping</a>
+                </li>
+            </ul>
+        </div>
+        <br/>
+        <div>
+            <div id="ps" hidden>
+                <div align="center">
+                    <a href="http://wuhuikai.me/DeepGuidedFilterProject/">[Project]</a>
+                    <a href="https://github.com/wuhuikai/DeepGuidedFilter">[GitHub]</a>
+                    <a href="https://arxiv.org/abs/1803.05619">[arXiv]</a>
+                </div>
+                <br/>
+                <div class="pure-g">
+                    <div class="pure-u-1-2" align="center">
+                        <img src='images/guided_filter/input.jpg' width="90%"/>
+                    </div>
+                    <div class="pure-u-1-2" align="center">
+                        <img src='images/guided_filter/output_ps.png' width="90%"/>
+                    </div>
+                </div>
+            </div>
+            <div id="dehaze" hidden>
+                <div align="center">
+                    <a href="http://wuhuikai.me/DeepGuidedFilterProject/">[Project]</a>
+                    <a href="https://github.com/wuhuikai/DeepGuidedFilter">[GitHub]</a>
+                    <a href="https://arxiv.org/abs/1803.05619">[arXiv]</a>
+                </div>
+                <br/>
+                <div class="pure-g">
+                    <div class="pure-u-1-2" align="center">
+                        <img src='images/guided_filter/input.jpg' width="90%"/>
+                    </div>
+                    <div class="pure-u-1-2" align="center">
+                        <img src='images/guided_filter/output_dehaze.png' width="90%"/>
+                    </div>
+                </div>
+            </div>
+            <div id="face_swap" hidden>
+                <div align="center">
+                    <a href="https://github.com/wuhuikai/FaceSwap">[GitHub]</a>
+                </div>
+                <br/>
+                <div class="pure-g">
+                    <div class="pure-u-1-3" align="center">
+                        <img src='images/face_swap/from.jpg' width="90%"/>
+                    </div>
+                    <div class="pure-u-1-3" align="center">
+                        <img src='images/face_swap/to.jpg' width="90%"/>
+                    </div>
+                    <div class="pure-u-1-3" align="center">
+                        <img src='images/face_swap/output.png' width="90%"/>
+                    </div>
+                </div>
+            </div>
+            <div id="blending" hidden>
+                <div align="center">
+                    <a href="http://wuhuikai.me/GP-GAN-Project/">[Project]</a>
+                    <a href="https://github.com/wuhuikai/GP-GAN">[GitHub]</a>
+                    <a href="https://arxiv.org/abs/1703.07195">[arXiv]</a>
+                </div>
+                <br/>
+                <div class="pure-g">
+                    <div class="pure-u-1-4" align="center">
+                        <img src='images/blending_mask/src.jpg' width="90%"/>
+                    </div>
+                    <div class="pure-u-1-4" align="center">
+                        <img src='images/blending_mask/mask.png' width="90%"/>
+                    </div>
+                    <div class="pure-u-1-4" align="center">
+                        <img src='images/blending_mask/dst.jpg' width="90%"/>
+                    </div>
+                    <div class="pure-u-1-4" align="center">
+                        <img src='images/blending_mask/output.png' width="90%"/>
+                    </div>
+                </div>
+            </div>
+            <div id="blending_mask" hidden>
+                <div align="center">
+                    <a href="http://wuhuikai.me/GP-GAN-Project/">[Project]</a>
+                    <a href="https://github.com/wuhuikai/GP-GAN">[GitHub]</a>
+                    <a href="https://arxiv.org/abs/1703.07195">[arXiv]</a>
+                </div>
+                <br/>
+                <div class="pure-g">
+                    <div class="pure-u-1-3" align="center">
+                        <img src='images/blending_mask/src.jpg' width="90%"/>
+                    </div>
+                    <div class="pure-u-1-3" align="center">
+                        <img src='images/blending_mask/dst.jpg' width="90%"/>
+                    </div>
+                    <div class="pure-u-1-3" align="center">
+                        <img src='images/blending_mask/output.png' width="90%"/>
+                    </div>
+                </div>
+            </div>
+            <div id="crop" hidden>
+                <div align="center">
+                    <a href="https://github.com/wuhuikai/TF-A2RL">[GitHub]</a>
+                    <a href="https://arxiv.org/abs/1709.04595">[arXiv]</a>
+                </div>
+                <br/>
+                <div class="pure-g">
+                    <div class="pure-u-1-2" align="center">
+                        <img src='images/auto_crop/input.jpg' width="90%"/>
+                    </div>
+                    <div class="pure-u-1-2" align="center">
+                        <img src='images/auto_crop/output.png' width="90%"/>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>
