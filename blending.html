@@ -3,10 +3,11 @@
     <head>
         <title>GP-GAN: Image Blending</title>
         <link rel="stylesheet" href="https://unpkg.com/purecss@1.0.0/build/pure-min.css" integrity="sha384-nn4HPE8lTHyVtfCBi5yW9d20FjT8BJwUXyWZT9InLYax14RDjBj46LmSztkmNP9w" crossorigin="anonymous">
-        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+        <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
         <script>
-            var ip = 'http://40.121.90.224:8080/';
+            var ip = 'http://127.0.0.1:5000/';
             var imgs = {'src': null, 'mask': null, 'dst': null};
+            var ratios = {'src': 1.0, 'mask': 1.0, 'dst': 1.0};
 
             $(document).ready(function() {
                 document.getElementById("color_weight").oninput = function() {
@@ -29,18 +30,20 @@
                     canvas.width = dst_im.width * div_img_ratio;
                     canvas.height = dst_im.height * div_img_ratio;
                     context.drawImage(dst_im, 0, 0, dst_im.width, dst_im.height, 0, 0, canvas.width, canvas.height);
+                } else {
+                    return null;
                 }
 
                 if (imgs['src'] == null || imgs['mask'] == null) {
                     return null;
                 }
 
-                var ratio = parseFloat($('#ratio_label').text());
+                var ratio = parseFloat($('#ratio_label').text())/ratios['mask']*ratios['dst'];
                 var mask = imgs['mask'];
                 var w = mask.width*ratio;
                 var h = mask.height*ratio;
-                var x = parseInt($('#x_label').text());
-                var y = parseInt($('#y_label').text());
+                var x = parseInt($('#x_label').text())*ratios['dst'];
+                var y = parseInt($('#y_label').text())*ratios['dst'];
                 context.globalCompositeOperation = 'screen';
                 context.drawImage(mask, x*div_img_ratio, y*div_img_ratio, w*div_img_ratio, h*div_img_ratio);
 
@@ -68,15 +71,15 @@
 
                 $('#dst_group').attr('hidden', false);
                 var x_slider = document.getElementById("x");
-                x_slider.min = parseInt(-w);
-                x_slider.max = parseInt(dst_im.width);
+                x_slider.min = parseInt(-w/ratios['dst']);
+                x_slider.max = parseInt(dst_im.width/ratios['dst']);
                 x_slider.oninput = function() {
                     document.getElementById("x_label").innerHTML = parseInt(this.value);
                     redraw();
                 };
                 var y_slider = document.getElementById("y");
-                y_slider.min = parseInt(-h);
-                y_slider.max = parseInt(dst_im.height);
+                y_slider.min = parseInt(-h/ratios['dst']);
+                y_slider.max = parseInt(dst_im.height/ratios['dst']);
                 y_slider.oninput = function() {
                     document.getElementById("y_label").innerHTML = parseInt(this.value);
                     redraw();
@@ -89,32 +92,47 @@
                 $('#output').attr('hidden', true);
                 imgs[post_fix] = null;
 
-                var form = document.getElementById('upload_'+post_fix);
-                var formData = new FormData(form);
-                $.ajax({
-                    url: ip+'upload',
-                    type: 'put',
-                    data: formData,
-                    processData: false,
-                    contentType: false
-                }).then(function(img) {
-                    if (input.files && input.files[0]) {
-                        var reader = new FileReader();
-                        reader.onload = function (e) {
-                            imgs[post_fix] = new Image();
-                            imgs[post_fix].src = e.target.result;
+                var reader = new FileReader();
+                reader.onload = function (e) {
+                    imgs[post_fix] = new Image();
+                    imgs[post_fix].onload = function () {
+                        var image = imgs[post_fix];
 
-                            if (post_fix !== 'dst') {
-                                $('#'+post_fix).attr('src', e.target.result).attr('hidden', false);
-                            }else {
-                                $('#'+post_fix).attr('hidden', false);
-                            }
-                        };
-                        reader.readAsDataURL(input.files[0]);
-                        $('#path_' + post_fix).text(img.data);
-                        $('#load_' + post_fix).attr('hidden', true);
-                    }
-                });
+                        var canvas = document.createElement("canvas");
+                        var context = canvas.getContext("2d");
+                        var ratio = Math.max(1.0, Math.max(image.width, image.height) / 1024);
+                        ratios[post_fix] = ratio;
+
+                        canvas.width = image.width / ratio;
+                        canvas.height = image.height / ratio;
+                        context.drawImage(image, 0, 0, image.width, image.height, 0, 0, canvas.width, canvas.height);
+
+                        var form = document.getElementById('upload_'+post_fix);
+                        var formData = new FormData(form);
+                        canvas.toBlob(function (blob) {
+                            formData.set('image', blob);
+                            $.ajax({
+                                url: ip + 'upload',
+                                type: 'put',
+                                data: formData,
+                                processData: false,
+                                contentType: false
+                            }).then(function (img) {
+                                $('#path_' + post_fix).text(img.data);
+                                $('#load_' + post_fix).attr('hidden', true);
+                                if (post_fix !== 'dst') {
+                                    $('#'+post_fix).attr('src', e.target.result).attr('hidden', false);
+                                }else {
+                                    $('#'+post_fix).attr('hidden', false);
+                                }
+                            });
+                        });
+                    };
+                    imgs[post_fix].src = e.target.result;
+                };
+                if (input.files && input.files[0]) {
+                    reader.readAsDataURL(input.files[0]);
+                }
             }
 
             function process() {
@@ -193,7 +211,7 @@
                     <br>
                     <div class="pure-u-1-3" align="center">
                         <label>Ratio: </label>
-                        <input type="range" min="1" max="20" value="10" id="ratio"/>
+                        <input type="range" min="1" max="50" value="10" id="ratio"/>
                         <span id="ratio_label">1.0</span>
                     </div>
                     <div class="pure-u-1-3" align="center">
